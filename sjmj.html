@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打麻雀計錢表 & 龍虎榜</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --primary: #2e7d32;
+            --text: #333333;
+            --win: #d32f2f;
+            --loss: #388e3c;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin-top: 0;
+            color: var(--primary);
+            text-align: center;
+            font-size: 1.2em;
+        }
+        .input-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 10px;
+        }
+        .input-group select {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 15px;
+            background-color: #fff;
+        }
+        .input-group input {
+            width: 110px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            text-align: right;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:active { opacity: 0.9; }
+        .btn-add-player {
+            background-color: #007bff;
+            padding: 8px 12px;
+            width: auto;
+            margin-top: 0;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .btn-clear-all {
+            background-color: #d32f2f;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.95em;
+        }
+        th, td {
+            padding: 10px 5px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        th { background-color: #f8f9fa; }
+        .win-score { color: var(--win); font-weight: bold; }
+        .loss-score { color: var(--loss); font-weight: bold; }
+        .error { color: var(--win); text-align: center; font-size: 0.9em; display: none; margin-top: 5px; }
+        
+        /* 歷史紀錄專用樣式 */
+        .history-item {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+            font-size: 0.85em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 10px;
+            flex-grow: 1;
+        }
+        .btn-del {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 1.1em;
+            cursor: pointer;
+            padding: 5px 8px;
+            width: auto;
+            margin: 0;
+        }
+        .btn-del:hover { color: var(--win); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 新增玩家 -->
+    <div class="card">
+        <h2>👥 新增雀友</h2>
+        <div style="display: flex; gap: 8px;">
+            <input type="text" id="new-player-name" placeholder="輸入玩家名字" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:15px;">
+            <button class="btn-add-player" onclick="addNewPlayer()">新增</button>
+        </div>
+    </div>
+
+    <!-- 每局輸贏輸入 -->
+    <div class="card">
+        <h2>🀄 輸入今局對局</h2>
+        <p style="font-size: 0.8em; color: #666; text-align: center; margin-bottom: 15px;">贏錢填正數（如 50），輸錢填負數（如 -50）<br>4 人總和必須等於 0</p>
+        
+        <div class="input-group">
+            <select id="select0"></select>
+            <input type="number" id="score0" placeholder="0">
+        </div>
+        <div class="input-group">
+            <select id="select1"></select>
+            <input type="number" id="score1" placeholder="0">
+        </div>
+        <div class="input-group">
+            <select id="select2"></select>
+            <input type="number" id="score2" placeholder="0">
+        </div>
+        <div class="input-group">
+            <select id="select3"></select>
+            <input type="number" id="score3" placeholder="0">
+        </div>
+
+        <div id="error-msg" class="error">4 人的總和不等於 0，請檢查數字！</div>
+        <button onclick="addRound()">紀錄今局</button>
+    </div>
+
+    <!-- 即時/總累積龍虎榜 -->
+    <div class="card">
+        <h2>🏆 總累積龍虎榜</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>排名</th>
+                    <th>玩家</th>
+                    <th>總成績</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard">
+                <!-- 動態生成 -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 每局歷史紀錄 -->
+    <div class="card">
+        <h2>📜 所有對局歷史紀錄</h2>
+        <div id="history-list">
+            <!-- 動態生成歷史 -->
+        </div>
+        <button class="btn-clear-all" onclick="clearAllData()">⚠️ 清除所有歷史數據與玩家</button>
+    </div>
+</div>
+
+<script>
+    let players = [];
+    let history = []; 
+
+    window.onload = function() {
+        loadData();
+        updatePlayerSelects();
+        renderAll();
+    };
+
+    function saveData() {
+        localStorage.setItem('mj_v3_players', JSON.stringify(players));
+        localStorage.setItem('mj_v3_history', JSON.stringify(history));
+    }
+
+    function loadData() {
+        const savedPlayers = localStorage.getItem('mj_v3_players');
+        const savedHistory = localStorage.getItem('mj_v3_history');
+        if (savedPlayers) players = JSON.parse(savedPlayers);
+        if (savedHistory) history = JSON.parse(savedHistory);
+    }
+
+    function addNewPlayer() {
+        const input = document.getElementById('new-player-name');
+        const name = input.value.trim();
+        if (!name) return;
+
+        if (players.includes(name)) {
+            alert('玩家名字已存在！');
+            return;
+        }
+
+        players.push(name);
+        input.value = '';
+        saveData();
+        updatePlayerSelects();
+        renderAll();
+    }
+
+    function updatePlayerSelects() {
+        for (let i = 0; i < 4; i++) {
+            const select = document.getElementById(`select${i}`);
+            const currentVal = select.value;
+            
+            select.innerHTML = '';
+
+            if (players.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.innerText = "請先新增玩家";
+                select.appendChild(opt);
+                continue;
+            }
+
+            players.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.innerText = p;
+                select.appendChild(opt);
+            });
+
+            // 自動設定初始預設選單（盡量不重複）
+            if (players.includes(currentVal)) {
+                select.value = currentVal;
+            } else if (players[i]) {
+                select.value = players[i];
+            } else {
+                select.value = players[0];
+            }
+        }
+    }
+
+    function addRound() {
+        if (players.length < 4) {
+            alert('請先在上方新增至少 4 位玩家！');
+            return;
+        }
+
+        const errorMsg = document.getElementById('error-msg');
+        let selectedPlayers = [];
+        let inputs = [];
+        let sum = 0;
+
+        for (let i = 0; i < 4; i++) {
+            const pName = document.getElementById(`select${i}`).value;
+            const val = parseFloat(document.getElementById(`score${i}`).value) || 0;
+            
+            selectedPlayers.push(pName);
+            inputs.push(val);
+            sum += val;
+        }
+
+        const uniqueSet = new Set(selectedPlayers);
+        if (uniqueSet.size < 4) {
+            alert('請勿選擇重複的玩家！');
+            return;
+        }
+
+        if (Math.abs(sum) > 0.01) {
+            errorMsg.style.display = 'block';
+            return;
+        }
+        errorMsg.style.display = 'none';
+
+        const now = new Date();
+        const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        
+        history.unshift({
+            players: selectedPlayers,
+            scores: inputs,
+            time: timeStr
+        });
+
+        for (let i = 0; i < 4; i++) {
+            document.getElementById(`score${i}`).value = '';
+        }
+
+        saveData();
+        renderAll();
+    }
+
+    function deleteRound(index) {
+        if (confirm(`確定要刪除第 ${history.length - index} 局紀錄？`)) {
+            history.splice(index, 1);
+            saveData();
+            renderAll();
+        }
+    }
+
+    function renderAll() {
+        // 1. 計算所有玩家總分
+        let totals = {};
+        players.forEach(p => totals[p] = 0);
+
+        history.forEach(round => {
+            round.players.forEach((pName, i) => {
+                if (!(pName in totals)) totals[pName] = 0;
+                totals[pName] += round.scores[i];
+            });
+        });
+
+        // 2. 渲染龍虎榜
+        let leaderboardData = Object.keys(totals).map(name => ({
+            name: name,
+            total: totals[name]
+        })).sort((a, b) => b.total - a.total);
+
+        const leaderboardTbody = document.getElementById('leaderboard');
+        leaderboardTbody.innerHTML = '';
+
+        if (leaderboardData.length === 0) {
+            leaderboardTbody.innerHTML = '<tr><td colspan="3" style="color:#999;">暫無玩家數據</td></tr>';
+        } else {
+            const medals = ['🥇', '🥈', '🥉'];
+            leaderboardData.forEach((player, index) => {
+                const row = document.createElement('tr');
+                const scoreClass = player.total > 0 ? 'win-score' : (player.total < 0 ? 'loss-score' : '');
+                const displayScore = player.total > 0 ? `+${player.total}` : player.total;
+                const rankIcon = medals[index] || (index + 1);
+
+                row.innerHTML = `
+                    <td>${rankIcon}</td>
+                    <td>${player.name}</td>
+                    <td class="${scoreClass}">${displayScore}</td>
+                `;
+                leaderboardTbody.appendChild(row);
+            });
+        }
+
+        // 3. 渲染歷史紀錄列表
+        const historyContainer = document.getElementById('history-list');
+        historyContainer.innerHTML = '';
+
+        if (history.length === 0) {
+            historyContainer.innerHTML = '<p style="text-align:center; color:#999; font-size:0.9em;">暫無對局紀錄</p>';
+            return;
+        }
+
+        history.forEach((round, index) => {
+            const roundNum = history.length - index;
+            const item = document.createElement('div');
+            item.className = 'history-item';
+
+            let detailsHtml = '';
+            round.players.forEach((pName, pIdx) => {
+                const score = round.scores[pIdx];
+                const color = score > 0 ? 'var(--win)' : (score < 0 ? 'var(--loss)' : '#666');
+                const sign = score > 0 ? '+' : '';
+                detailsHtml += `<div>${pName}: <span style="color:${color}; font-weight:bold;">${sign}${score}</span></div>`;
+            });
+
+            item.innerHTML = `
+                <div style="font-weight:bold; width:65px; color:#666;">第 ${roundNum} 局<br><span style="font-size:0.8em; font-weight:normal;">${round.time}</span></div>
+                <div class="history-details">${detailsHtml}</div>
+                <button class="btn-del" onclick="deleteRound(${index})" title="刪除此局">❌</button>
+            `;
+            historyContainer.appendChild(item);
+        });
+    }
+
+    function clearAllData() {
+        if (confirm('⚠️ 警告：這將會清除「所有歷史紀錄」與「所有玩家名單」！確定要重置嗎？')) {
+            players = [];
+            history = [];
+            saveData();
+            updatePlayerSelects();
+            renderAll();
+        }
+    }
+</script>
+
+</body>
+</html>
