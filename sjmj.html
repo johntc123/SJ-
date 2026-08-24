@@ -2,7 +2,9 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>打麻雀計錢表 & 龍虎榜</title>
     <style>
         :root {
@@ -14,7 +16,7 @@
             --loss: #388e3c;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
             background-color: var(--bg-color);
             color: var(--text);
             margin: 0;
@@ -22,6 +24,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            -webkit-text-size-adjust: 100%;
         }
         .container {
             width: 100%;
@@ -52,8 +55,9 @@
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 6px;
-            font-size: 15px;
+            font-size: 16px; /* 16px 可防止 Safari 自動放大畫面 */
             background-color: #fff;
+            -webkit-appearance: none;
         }
         .input-group input {
             width: 110px;
@@ -74,6 +78,7 @@
             font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
+            -webkit-tap-highlight-color: transparent;
         }
         button:active { opacity: 0.9; }
         .btn-add-player {
@@ -105,7 +110,6 @@
         .loss-score { color: var(--loss); font-weight: bold; }
         .error { color: var(--win); text-align: center; font-size: 0.9em; display: none; margin-top: 5px; }
         
-        /* 歷史紀錄專用樣式 */
         .history-item {
             border-bottom: 1px solid #eee;
             padding: 10px 0;
@@ -136,16 +140,14 @@
 <body>
 
 <div class="container">
-    <!-- 新增玩家 -->
     <div class="card">
         <h2>👥 新增雀友</h2>
         <div style="display: flex; gap: 8px;">
-            <input type="text" id="new-player-name" placeholder="輸入玩家名字" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:15px;">
+            <input type="text" id="new-player-name" placeholder="輸入玩家名字" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:16px;">
             <button class="btn-add-player" onclick="addNewPlayer()">新增</button>
         </div>
     </div>
 
-    <!-- 每局輸贏輸入 -->
     <div class="card">
         <h2>🀄 輸入今局對局</h2>
         <p style="font-size: 0.8em; color: #666; text-align: center; margin-bottom: 15px;">贏錢填正數（如 50），輸錢填負數（如 -50）<br>4 人總和必須等於 0</p>
@@ -171,7 +173,6 @@
         <button onclick="addRound()">紀錄今局</button>
     </div>
 
-    <!-- 即時/總累積龍虎榜 -->
     <div class="card">
         <h2>🏆 總累積龍虎榜</h2>
         <table>
@@ -183,17 +184,14 @@
                 </tr>
             </thead>
             <tbody id="leaderboard">
-                <!-- 動態生成 -->
-            </tbody>
+                </tbody>
         </table>
     </div>
 
-    <!-- 每局歷史紀錄 -->
     <div class="card">
         <h2>📜 所有對局歷史紀錄</h2>
         <div id="history-list">
-            <!-- 動態生成歷史 -->
-        </div>
+            </div>
         <button class="btn-clear-all" onclick="clearAllData()">⚠️ 清除所有歷史數據與玩家</button>
     </div>
 </div>
@@ -202,6 +200,33 @@
     let players = [];
     let history = []; 
 
+    // 安全 LocalStorage 封裝 (針對 Safari 安全限制修復)
+    const Storage = {
+        get: function(key) {
+            try {
+                return localStorage.getItem(key);
+            } catch (e) {
+                console.warn('Safari LocalStorage 讀取受限，改用記憶體暫存');
+                return window['temp_' + key] || null;
+            }
+        },
+        set: function(key, value) {
+            try {
+                localStorage.setItem(key, value);
+            } catch (e) {
+                console.warn('Safari LocalStorage 寫入受限');
+                window['temp_' + key] = value;
+            }
+        },
+        remove: function(key) {
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {
+                delete window['temp_' + key];
+            }
+        }
+    };
+
     window.onload = function() {
         loadData();
         updatePlayerSelects();
@@ -209,15 +234,19 @@
     };
 
     function saveData() {
-        localStorage.setItem('mj_v3_players', JSON.stringify(players));
-        localStorage.setItem('mj_v3_history', JSON.stringify(history));
+        Storage.set('mj_v4_players', JSON.stringify(players));
+        Storage.set('mj_v4_history', JSON.stringify(history));
     }
 
     function loadData() {
-        const savedPlayers = localStorage.getItem('mj_v3_players');
-        const savedHistory = localStorage.getItem('mj_v3_history');
-        if (savedPlayers) players = JSON.parse(savedPlayers);
-        if (savedHistory) history = JSON.parse(savedHistory);
+        const savedPlayers = Storage.get('mj_v4_players');
+        const savedHistory = Storage.get('mj_v4_history');
+        if (savedPlayers) {
+            try { players = JSON.parse(savedPlayers); } catch(e) { players = []; }
+        }
+        if (savedHistory) {
+            try { history = JSON.parse(savedHistory); } catch(e) { history = []; }
+        }
     }
 
     function addNewPlayer() {
@@ -259,7 +288,6 @@
                 select.appendChild(opt);
             });
 
-            // 自動設定初始預設選單（盡量不重複）
             if (players.includes(currentVal)) {
                 select.value = currentVal;
             } else if (players[i]) {
@@ -328,7 +356,6 @@
     }
 
     function renderAll() {
-        // 1. 計算所有玩家總分
         let totals = {};
         players.forEach(p => totals[p] = 0);
 
@@ -339,7 +366,6 @@
             });
         });
 
-        // 2. 渲染龍虎榜
         let leaderboardData = Object.keys(totals).map(name => ({
             name: name,
             total: totals[name]
@@ -367,7 +393,6 @@
             });
         }
 
-        // 3. 渲染歷史紀錄列表
         const historyContainer = document.getElementById('history-list');
         historyContainer.innerHTML = '';
 
