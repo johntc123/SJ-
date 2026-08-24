@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>打麻雀計錢表 & 龍虎榜</title>
     <style>
         :root {
@@ -12,11 +10,11 @@
             --card-bg: #ffffff;
             --primary: #2e7d32;
             --text: #333333;
-            --win: #d32f2f;
-            --loss: #388e3c;
+            --win: #2e7d32;   /* 正數/贏錢：綠色 */
+            --loss: #d32f2f;  /* 負數/輸錢：紅色 */
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text);
             margin: 0;
@@ -24,7 +22,6 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            -webkit-text-size-adjust: 100%;
         }
         .container {
             width: 100%;
@@ -55,9 +52,8 @@
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 6px;
-            font-size: 16px; /* 16px 可防止 Safari 自動放大畫面 */
+            font-size: 16px;
             background-color: #fff;
-            -webkit-appearance: none;
         }
         .input-group input {
             width: 110px;
@@ -78,7 +74,6 @@
             font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
-            -webkit-tap-highlight-color: transparent;
         }
         button:active { opacity: 0.9; }
         .btn-add-player {
@@ -88,6 +83,10 @@
             margin-top: 0;
             font-size: 14px;
             white-space: nowrap;
+        }
+        .btn-share {
+            background-color: #17a2b8;
+            margin-top: 10px;
         }
         .btn-clear-all {
             background-color: #d32f2f;
@@ -108,7 +107,7 @@
         th { background-color: #f8f9fa; }
         .win-score { color: var(--win); font-weight: bold; }
         .loss-score { color: var(--loss); font-weight: bold; }
-        .error { color: var(--win); text-align: center; font-size: 0.9em; display: none; margin-top: 5px; }
+        .error { color: var(--loss); text-align: center; font-size: 0.9em; display: none; margin-top: 5px; }
         
         .history-item {
             border-bottom: 1px solid #eee;
@@ -134,12 +133,12 @@
             width: auto;
             margin: 0;
         }
-        .btn-del:hover { color: var(--win); }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- 新增玩家 -->
     <div class="card">
         <h2>👥 新增雀友</h2>
         <div style="display: flex; gap: 8px;">
@@ -148,6 +147,7 @@
         </div>
     </div>
 
+    <!-- 每局輸贏輸入 -->
     <div class="card">
         <h2>🀄 輸入今局對局</h2>
         <p style="font-size: 0.8em; color: #666; text-align: center; margin-bottom: 15px;">贏錢填正數（如 50），輸錢填負數（如 -50）<br>4 人總和必須等於 0</p>
@@ -173,6 +173,7 @@
         <button onclick="addRound()">紀錄今局</button>
     </div>
 
+    <!-- 總累積龍虎榜 -->
     <div class="card">
         <h2>🏆 總累積龍虎榜</h2>
         <table>
@@ -184,15 +185,19 @@
                 </tr>
             </thead>
             <tbody id="leaderboard">
-                </tbody>
+                <!-- 動態生成 -->
+            </tbody>
         </table>
     </div>
 
+    <!-- 每局歷史紀錄與同步 -->
     <div class="card">
         <h2>📜 所有對局歷史紀錄</h2>
-        <div id="history-list">
-            </div>
-        <button class="btn-clear-all" onclick="clearAllData()">⚠️ 清除所有歷史數據與玩家</button>
+        <div id="history-list"></div>
+        
+        <button class="btn-share" onclick="exportData()">📤 複製數據傳給雀友同步</button>
+        <button class="btn-share" style="background-color:#6c757d;" onclick="importData()">📥 匯入雀友發送的數據</button>
+        <button class="btn-clear-all" onclick="clearAllData()">⚠️ 清除所有數據與玩家</button>
     </div>
 </div>
 
@@ -200,30 +205,12 @@
     let players = [];
     let history = []; 
 
-    // 安全 LocalStorage 封裝 (針對 Safari 安全限制修復)
     const Storage = {
         get: function(key) {
-            try {
-                return localStorage.getItem(key);
-            } catch (e) {
-                console.warn('Safari LocalStorage 讀取受限，改用記憶體暫存');
-                return window['temp_' + key] || null;
-            }
+            try { return localStorage.getItem(key); } catch (e) { return window['temp_' + key] || null; }
         },
         set: function(key, value) {
-            try {
-                localStorage.setItem(key, value);
-            } catch (e) {
-                console.warn('Safari LocalStorage 寫入受限');
-                window['temp_' + key] = value;
-            }
-        },
-        remove: function(key) {
-            try {
-                localStorage.removeItem(key);
-            } catch (e) {
-                delete window['temp_' + key];
-            }
+            try { localStorage.setItem(key, value); } catch (e) { window['temp_' + key] = value; }
         }
     };
 
@@ -234,31 +221,22 @@
     };
 
     function saveData() {
-        Storage.set('mj_v4_players', JSON.stringify(players));
-        Storage.set('mj_v4_history', JSON.stringify(history));
+        Storage.set('mj_v5_players', JSON.stringify(players));
+        Storage.set('mj_v5_history', JSON.stringify(history));
     }
 
     function loadData() {
-        const savedPlayers = Storage.get('mj_v4_players');
-        const savedHistory = Storage.get('mj_v4_history');
-        if (savedPlayers) {
-            try { players = JSON.parse(savedPlayers); } catch(e) { players = []; }
-        }
-        if (savedHistory) {
-            try { history = JSON.parse(savedHistory); } catch(e) { history = []; }
-        }
+        const savedPlayers = Storage.get('mj_v5_players');
+        const savedHistory = Storage.get('mj_v5_history');
+        if (savedPlayers) { try { players = JSON.parse(savedPlayers); } catch(e) { players = []; } }
+        if (savedHistory) { try { history = JSON.parse(savedHistory); } catch(e) { history = []; } }
     }
 
     function addNewPlayer() {
         const input = document.getElementById('new-player-name');
         const name = input.value.trim();
         if (!name) return;
-
-        if (players.includes(name)) {
-            alert('玩家名字已存在！');
-            return;
-        }
-
+        if (players.includes(name)) { alert('玩家名字已存在！'); return; }
         players.push(name);
         input.value = '';
         saveData();
@@ -270,79 +248,44 @@
         for (let i = 0; i < 4; i++) {
             const select = document.getElementById(`select${i}`);
             const currentVal = select.value;
-            
             select.innerHTML = '';
-
             if (players.length === 0) {
                 const opt = document.createElement('option');
-                opt.value = "";
-                opt.innerText = "請先新增玩家";
+                opt.value = ""; opt.innerText = "請先新增玩家";
                 select.appendChild(opt);
                 continue;
             }
-
             players.forEach(p => {
                 const opt = document.createElement('option');
-                opt.value = p;
-                opt.innerText = p;
+                opt.value = p; opt.innerText = p;
                 select.appendChild(opt);
             });
-
-            if (players.includes(currentVal)) {
-                select.value = currentVal;
-            } else if (players[i]) {
-                select.value = players[i];
-            } else {
-                select.value = players[0];
-            }
+            if (players.includes(currentVal)) { select.value = currentVal; }
+            else if (players[i]) { select.value = players[i]; }
+            else { select.value = players[0]; }
         }
     }
 
     function addRound() {
-        if (players.length < 4) {
-            alert('請先在上方新增至少 4 位玩家！');
-            return;
-        }
-
+        if (players.length < 4) { alert('請先新增至少 4 位玩家！'); return; }
         const errorMsg = document.getElementById('error-msg');
-        let selectedPlayers = [];
-        let inputs = [];
-        let sum = 0;
+        let selectedPlayers = []; let inputs = []; let sum = 0;
 
         for (let i = 0; i < 4; i++) {
             const pName = document.getElementById(`select${i}`).value;
             const val = parseFloat(document.getElementById(`score${i}`).value) || 0;
-            
-            selectedPlayers.push(pName);
-            inputs.push(val);
-            sum += val;
+            selectedPlayers.push(pName); inputs.push(val); sum += val;
         }
 
-        const uniqueSet = new Set(selectedPlayers);
-        if (uniqueSet.size < 4) {
-            alert('請勿選擇重複的玩家！');
-            return;
-        }
-
-        if (Math.abs(sum) > 0.01) {
-            errorMsg.style.display = 'block';
-            return;
-        }
+        if (new Set(selectedPlayers).size < 4) { alert('請勿選擇重複玩家！'); return; }
+        if (Math.abs(sum) > 0.01) { errorMsg.style.display = 'block'; return; }
         errorMsg.style.display = 'none';
 
         const now = new Date();
         const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        
-        history.unshift({
-            players: selectedPlayers,
-            scores: inputs,
-            time: timeStr
-        });
+        history.unshift({ players: selectedPlayers, scores: inputs, time: timeStr });
 
-        for (let i = 0; i < 4; i++) {
-            document.getElementById(`score${i}`).value = '';
-        }
-
+        for (let i = 0; i < 4; i++) { document.getElementById(`score${i}`).value = ''; }
         saveData();
         renderAll();
     }
@@ -358,7 +301,6 @@
     function renderAll() {
         let totals = {};
         players.forEach(p => totals[p] = 0);
-
         history.forEach(round => {
             round.players.forEach((pName, i) => {
                 if (!(pName in totals)) totals[pName] = 0;
@@ -367,8 +309,7 @@
         });
 
         let leaderboardData = Object.keys(totals).map(name => ({
-            name: name,
-            total: totals[name]
+            name: name, total: totals[name]
         })).sort((a, b) => b.total - a.total);
 
         const leaderboardTbody = document.getElementById('leaderboard');
@@ -380,12 +321,11 @@
             const medals = ['🥇', '🥈', '🥉'];
             leaderboardData.forEach((player, index) => {
                 const row = document.createElement('tr');
+                // 正數用 win-score (綠色)，負數用 loss-score (紅色)
                 const scoreClass = player.total > 0 ? 'win-score' : (player.total < 0 ? 'loss-score' : '');
                 const displayScore = player.total > 0 ? `+${player.total}` : player.total;
-                const rankIcon = medals[index] || (index + 1);
-
                 row.innerHTML = `
-                    <td>${rankIcon}</td>
+                    <td>${medals[index] || (index + 1)}</td>
                     <td>${player.name}</td>
                     <td class="${scoreClass}">${displayScore}</td>
                 `;
@@ -395,17 +335,14 @@
 
         const historyContainer = document.getElementById('history-list');
         historyContainer.innerHTML = '';
-
         if (history.length === 0) {
             historyContainer.innerHTML = '<p style="text-align:center; color:#999; font-size:0.9em;">暫無對局紀錄</p>';
             return;
         }
 
         history.forEach((round, index) => {
-            const roundNum = history.length - index;
             const item = document.createElement('div');
             item.className = 'history-item';
-
             let detailsHtml = '';
             round.players.forEach((pName, pIdx) => {
                 const score = round.scores[pIdx];
@@ -413,23 +350,45 @@
                 const sign = score > 0 ? '+' : '';
                 detailsHtml += `<div>${pName}: <span style="color:${color}; font-weight:bold;">${sign}${score}</span></div>`;
             });
-
             item.innerHTML = `
-                <div style="font-weight:bold; width:65px; color:#666;">第 ${roundNum} 局<br><span style="font-size:0.8em; font-weight:normal;">${round.time}</span></div>
+                <div style="font-weight:bold; width:65px; color:#666;">第 ${history.length - index} 局<br><span style="font-size:0.8em; font-weight:normal;">${round.time}</span></div>
                 <div class="history-details">${detailsHtml}</div>
-                <button class="btn-del" onclick="deleteRound(${index})" title="刪除此局">❌</button>
+                <button class="btn-del" onclick="deleteRound(${index})">❌</button>
             `;
             historyContainer.appendChild(item);
         });
     }
 
+    // 數據同步功能
+    function exportData() {
+        const dataStr = JSON.stringify({ players: players, history: history });
+        navigator.clipboard.writeText(dataStr).then(() => {
+            alert('對局數據已複製到剪貼簿！你可以直接 Paste / 貼上傳給朋友。');
+        }).catch(() => {
+            prompt('請複製以下數據發送給雀友：', dataStr);
+        });
+    }
+
+    function importData() {
+        const inputData = prompt('請貼上雀友傳給你的數據代碼：');
+        if (!inputData) return;
+        try {
+            const parsed = JSON.parse(inputData);
+            if (parsed.players && parsed.history) {
+                players = parsed.players;
+                history = parsed.history;
+                saveData();
+                updatePlayerSelects();
+                renderAll();
+                alert('數據匯入成功！龍虎榜已更新。');
+            } else { alert('數據格式無效！'); }
+        } catch (e) { alert('匯入失敗，代碼有誤！'); }
+    }
+
     function clearAllData() {
-        if (confirm('⚠️ 警告：這將會清除「所有歷史紀錄」與「所有玩家名單」！確定要重置嗎？')) {
-            players = [];
-            history = [];
-            saveData();
-            updatePlayerSelects();
-            renderAll();
+        if (confirm('⚠️ 確定要清除所有歷史紀錄與玩家名單？')) {
+            players = []; history = [];
+            saveData(); updatePlayerSelects(); renderAll();
         }
     }
 </script>
