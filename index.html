@@ -35,13 +35,15 @@
         .input-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
         .input-group select, .input-group input { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; background-color: #fff; }
         .input-group select { flex: 1; }
-        .input-group input { width: 110px; text-align: right; }
+        .input-group input { width: 90px; text-align: right; }
         button {
             width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none;
             border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
         }
         button:active { opacity: 0.9; }
         .btn-add-player { background-color: #007bff; padding: 8px 12px; width: auto; margin-top: 0; font-size: 14px; white-space: nowrap; }
+        .btn-add-row { background-color: #17a2b8; padding: 8px 12px; width: 100%; margin-top: 5px; font-size: 14px; margin-bottom: 10px; }
+        .btn-remove-row { background-color: #dc3545; color: white; border: none; padding: 8px 10px; font-size: 14px; border-radius: 6px; cursor: pointer; width: auto; margin-top: 0; }
         .btn-clear-all { background-color: #d32f2f; margin-top: 15px; font-size: 14px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95em; }
         th, td { padding: 10px 5px; text-align: center; border-bottom: 1px solid #eee; }
@@ -65,7 +67,7 @@
 <div class="container">
     <!-- 雲端房間 -->
     <div class="card">
-        <h2>🏠 雲端對局房間 v2.0</h2>
+        <h2>🏠 雲端對局房間 v3.0</h2>
         <div class="room-bar">
             <span style="white-space: nowrap; font-weight: bold;">房間號碼：</span>
             <input type="text" id="room-id" value="1" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:16px;">
@@ -85,17 +87,12 @@
 
     <!-- 每局輸贏輸入 -->
     <div class="card">
-        <h2>🀄 輸入今局對局 (支援最多 8 人)</h2>
-        <p style="font-size: 0.8em; color: #666; text-align: center; margin-bottom: 10px;">沒參與該局的玩家<b>留空或選擇「不參與 / 無」</b>即可<br>有填分數者的總和必須等於 0</p>
+        <h2>🀄 輸入今局對局</h2>
+        <p style="font-size: 0.8em; color: #666; text-align: center; margin-bottom: 10px;">預設 4 人，點擊按鈕可自由擴充人數<br>有填分數者的總和必須等於 0</p>
         
-        <div class="input-group"><select id="select0"></select><input type="number" id="score0" placeholder="0"></div>
-        <div class="input-group"><select id="select1"></select><input type="number" id="score1" placeholder="0"></div>
-        <div class="input-group"><select id="select2"></select><input type="number" id="score2" placeholder="0"></div>
-        <div class="input-group"><select id="select3"></select><input type="number" id="score3" placeholder="0"></div>
-        <div class="input-group"><select id="select4"></select><input type="number" id="score4" placeholder="0"></div>
-        <div class="input-group"><select id="select5"></select><input type="number" id="score5" placeholder="0"></div>
-        <div class="input-group"><select id="select6"></select><input type="number" id="score6" placeholder="0"></div>
-        <div class="input-group"><select id="select7"></select><input type="number" id="score7" placeholder="0"></div>
+        <div id="dynamic-rows"></div>
+
+        <button type="button" class="btn-add-row" onclick="addPlayerRow()">➕ 增加一位玩家</button>
 
         <!-- 今局最高食糊紀錄（選填） -->
         <div class="fan-section">
@@ -169,10 +166,40 @@
     let currentRoom = "1";
     let players = [];
     let history = [];
+    let rowIdCounter = 0;
 
     window.onload = function() {
+        // 預設建立 4 個輸入列
+        for(let i=0; i<4; i++) {
+            addPlayerRow();
+        }
         listenToRoom(currentRoom);
     };
+
+    function addPlayerRow() {
+        const container = document.getElementById('dynamic-rows');
+        const rowId = `row-${rowIdCounter++}`;
+        const div = document.createElement('div');
+        div.className = 'input-group';
+        div.id = rowId;
+        div.innerHTML = `
+            <select class="row-select"></select>
+            <input type="number" class="row-score" placeholder="0">
+            <button type="button" class="btn-remove-row" onclick="removePlayerRow('${rowId}')">✕</button>
+        `;
+        container.appendChild(div);
+        updatePlayerSelects();
+    }
+
+    function removePlayerRow(rowId) {
+        const container = document.getElementById('dynamic-rows');
+        if (container.children.length <= 2) {
+            alert('最少需要保留 2 位玩家輸入列！');
+            return;
+        }
+        const elem = document.getElementById(rowId);
+        if (elem) elem.remove();
+    }
 
     function switchRoom() {
         const roomInput = document.getElementById('room-id').value.trim();
@@ -213,13 +240,12 @@
     }
 
     function updatePlayerSelects() {
+        const selects = document.querySelectorAll('.row-select');
         const fanSelect = document.getElementById('fan-player');
         const currentFanVal = fanSelect ? fanSelect.value : '';
         if (fanSelect) fanSelect.innerHTML = '<option value="">無 / 未有紀錄</option>';
 
-        for (let i = 0; i < 8; i++) {
-            const select = document.getElementById(`select${i}`);
-            if (!select) continue;
+        selects.forEach((select, idx) => {
             const currentVal = select.value;
             select.innerHTML = '<option value="">-- 不參與 / 無 --</option>';
 
@@ -231,12 +257,12 @@
 
             if (players.includes(currentVal)) {
                 select.value = currentVal;
-            } else if (players[i]) {
-                select.value = players[i];
+            } else if (players[idx]) {
+                select.value = players[idx];
             } else {
                 select.value = "";
             }
-        }
+        });
 
         if (fanSelect) {
             players.forEach(p => {
@@ -250,15 +276,16 @@
 
     function addRound() {
         const errorMsg = document.getElementById('error-msg');
+        const selects = document.querySelectorAll('.row-select');
+        const scoreInputs = document.querySelectorAll('.row-score');
+
         let selectedPlayers = [];
         let inputs = [];
         let sum = 0;
 
-        for (let i = 0; i < 8; i++) {
-            const select = document.getElementById(`select${i}`);
-            const scoreInput = document.getElementById(`score${i}`);
-            const pName = select.value;
-            const valStr = scoreInput.value.trim();
+        for (let i = 0; i < selects.length; i++) {
+            const pName = selects[i].value;
+            const valStr = scoreInputs[i].value.trim();
 
             if (pName !== "" && valStr !== "") {
                 const val = parseFloat(valStr) || 0;
@@ -298,9 +325,7 @@
             fanCount: fanCount
         });
 
-        for (let i = 0; i < 8; i++) {
-            document.getElementById(`score${i}`).value = '';
-        }
+        scoreInputs.forEach(input => input.value = '');
         document.getElementById('fan-count').value = '';
         pushDataToCloud();
     }
