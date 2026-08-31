@@ -55,6 +55,7 @@
         .history-details { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; flex-grow: 1; }
         .btn-del { background: none; border: none; color: #999; font-size: 1.1em; cursor: pointer; padding: 5px 8px; width: auto; margin: 0; }
         .room-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; background: #e8f5e9; padding: 10px; border-radius: 8px; }
+        .date-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; background: #f8f9fa; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee; }
         .fan-section { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-top: 15px; border: 1px dashed #ccc; }
     </style>
 
@@ -90,6 +91,12 @@
         <h2>🀄 輸入今局對局</h2>
         <p style="font-size: 0.8em; color: #666; text-align: center; margin-bottom: 10px;">預設 4 人，點擊按鈕可自由擴充人數<br>有填分數者的總和必須等於 0</p>
         
+        <!-- 日期選擇 -->
+        <div class="date-bar">
+            <span style="font-weight: bold; font-size: 0.9em; color: #555;">📅 對局日期：</span>
+            <input type="date" id="game-date" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:6px; font-size:14px; text-align:center;">
+        </div>
+
         <div id="dynamic-rows"></div>
 
         <button type="button" class="btn-add-row" onclick="addPlayerRow()">➕ 增加一位玩家</button>
@@ -169,6 +176,10 @@
     let rowIdCounter = 0;
 
     window.onload = function() {
+        // 設定日期輸入框預設為今天
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('game-date').value = today;
+
         for(let i=0; i<4; i++) {
             addPlayerRow();
         }
@@ -277,6 +288,7 @@
         const errorMsg = document.getElementById('error-msg');
         const selects = document.querySelectorAll('.row-select');
         const scoreInputs = document.querySelectorAll('.row-score');
+        const dateInput = document.getElementById('game-date').value;
 
         let selectedPlayers = [];
         let inputs = [];
@@ -315,10 +327,12 @@
 
         const now = new Date();
         const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        
+        const displayDate = dateInput || now.toISOString().split('T')[0];
+
         history.unshift({
             players: selectedPlayers,
             scores: inputs,
+            date: displayDate,
             time: timeStr,
             fanPlayer: fanPlayer,
             fanCount: fanCount
@@ -364,7 +378,7 @@
             }
         });
 
-        // 1. 總輸贏龍虎榜（自訂排序：正數 > 負數 > 0）
+        // 1. 總輸贏龍虎榜（正數 > 負數 > 0）
         let leaderboardData = Object.keys(totals).map(name => ({ name: name, total: totals[name] })).sort((a, b) => {
             if (a.total === 0 && b.total !== 0) return 1;
             if (b.total === 0 && a.total !== 0) return -1;
@@ -411,8 +425,10 @@
             
             let fanInfo = round.fanPlayer && round.fanCount > 0 ? `<div style="grid-column: span 2; color:#007bff; font-weight:bold;">🀄 ${round.fanPlayer} 食 ${round.fanCount} 番</div>` : '';
 
+            const roundDate = round.date || '';
+
             item.innerHTML = `
-                <div style="font-weight:bold; width:65px; color:#666;">第 ${history.length - index} 局<br><span style="font-size:0.8em; font-weight:normal;">${round.time}</span></div>
+                <div style="font-weight:bold; width:85px; color:#666; font-size:0.85em;">第 ${history.length - index} 局<br><span style="font-size:0.75em; font-weight:normal; color:#888;">${roundDate}<br>${round.time}</span></div>
                 <div class="history-details">${detailsHtml}${fanInfo}</div>
                 <button class="btn-del" onclick="deleteRound(${index})">❌</button>
             `;
