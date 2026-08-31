@@ -46,7 +46,7 @@
         .btn-remove-row { background-color: #dc3545; color: white; border: none; padding: 8px 10px; font-size: 14px; border-radius: 6px; cursor: pointer; width: auto; margin-top: 0; }
         .btn-clear-all { background-color: #d32f2f; margin-top: 15px; font-size: 14px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95em; }
-        th, td { padding: 10px 5px; text-align: center; border-bottom: 1px solid #eee; }
+        th, td { padding: 10px 4px; text-align: center; border-bottom: 1px solid #eee; }
         th { background-color: #f8f9fa; }
         .win-score { color: var(--win); font-weight: bold; }
         .loss-score { color: var(--loss); font-weight: bold; }
@@ -141,7 +141,7 @@
         <h2>💥 最高食糊番數榜</h2>
         <table>
             <thead>
-                <tr><th>排名</th><th>玩家</th><th>最高番數/分數</th></tr>
+                <tr><th style="width:15%;">排名</th><th style="width:25%;">玩家</th><th style="width:35%;">最高番數/分數</th><th style="width:25%;">日期</th></tr>
             </thead>
             <tbody id="maxfan-board"></tbody>
         </table>
@@ -176,7 +176,6 @@
     let rowIdCounter = 0;
 
     window.onload = function() {
-        // 設定日期輸入框預設為今天
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('game-date').value = today;
 
@@ -326,14 +325,12 @@
         const fanCount = parseFloat(document.getElementById('fan-count').value) || 0;
 
         const now = new Date();
-        const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         const displayDate = dateInput || now.toISOString().split('T')[0];
 
         history.unshift({
             players: selectedPlayers,
             scores: inputs,
             date: displayDate,
-            time: timeStr,
             fanPlayer: fanPlayer,
             fanCount: fanCount
         });
@@ -360,7 +357,6 @@
         players.forEach(p => {
             totals[p] = 0;
             attendance[p] = 0;
-            maxFans[p] = 0;
         });
 
         history.forEach(round => {
@@ -372,13 +368,16 @@
             });
 
             if (round.fanPlayer && round.fanCount > 0) {
-                if (!(round.fanPlayer in maxFans) || round.fanCount > maxFans[round.fanPlayer]) {
-                    maxFans[round.fanPlayer] = round.fanCount;
+                if (!(round.fanPlayer in maxFans) || round.fanCount > maxFans[round.fanPlayer].fan) {
+                    maxFans[round.fanPlayer] = {
+                        fan: round.fanCount,
+                        date: round.date || '-'
+                    };
                 }
             }
         });
 
-        // 1. 總輸贏龍虎榜（正數 > 負數 > 0）
+        // 1. 總輸贏龍虎榜
         let leaderboardData = Object.keys(totals).map(name => ({ name: name, total: totals[name] })).sort((a, b) => {
             if (a.total === 0 && b.total !== 0) return 1;
             if (b.total === 0 && a.total !== 0) return -1;
@@ -402,14 +401,25 @@
         });
 
         // 3. 最高番數榜
-        let maxFanData = Object.keys(maxFans).filter(name => maxFans[name] > 0).map(name => ({ name: name, fan: maxFans[name] })).sort((a, b) => b.fan - a.fan);
+        let maxFanData = Object.keys(maxFans).map(name => ({
+            name: name,
+            fan: maxFans[name].fan,
+            date: maxFans[name].date
+        })).sort((a, b) => b.fan - a.fan);
+
         const maxfanTbody = document.getElementById('maxfan-board');
-        maxfanTbody.innerHTML = maxFanData.length === 0 ? '<tr><td colspan="3" style="color:#999;">暫無食糊紀錄</td></tr>' : '';
+        maxfanTbody.innerHTML = maxFanData.length === 0 ? '<tr><td colspan="4" style="color:#999;">暫無食糊紀錄</td></tr>' : '';
         maxFanData.forEach((p, i) => {
-            maxfanTbody.innerHTML += `<tr><td>${medals[i] || (i + 1)}</td><td>${p.name}</td><td style="color:var(--primary); font-weight:bold;">${p.fan} 番/分</td></tr>`;
+            maxfanTbody.innerHTML += `
+                <tr>
+                    <td>${medals[i] || (i + 1)}</td>
+                    <td>${p.name}</td>
+                    <td style="color:var(--primary); font-weight:bold;">${p.fan} 番/分</td>
+                    <td style="color:#777; font-size:0.85em;">${p.date}</td>
+                </tr>`;
         });
 
-        // 4. 歷史紀錄
+        // 4. 歷史紀錄（已移除時間，只顯示日期）
         const historyContainer = document.getElementById('history-list');
         historyContainer.innerHTML = history.length === 0 ? '<p style="text-align:center; color:#999; font-size:0.9em;">暫無對局紀錄</p>' : '';
         history.forEach((round, index) => {
@@ -428,7 +438,7 @@
             const roundDate = round.date || '';
 
             item.innerHTML = `
-                <div style="font-weight:bold; width:85px; color:#666; font-size:0.85em;">第 ${history.length - index} 局<br><span style="font-size:0.75em; font-weight:normal; color:#888;">${roundDate}<br>${round.time}</span></div>
+                <div style="font-weight:bold; width:85px; color:#666; font-size:0.85em;">第 ${history.length - index} 局<br><span style="font-size:0.8em; font-weight:normal; color:#888;">${roundDate}</span></div>
                 <div class="history-details">${detailsHtml}${fanInfo}</div>
                 <button class="btn-del" onclick="deleteRound(${index})">❌</button>
             `;
