@@ -32,16 +32,18 @@
             margin-bottom: 20px;
         }
         h2 { margin-top: 0; color: var(--primary); text-align: center; font-size: 1.2em; }
-        .input-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; }
+        .input-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
         .input-group select, .input-group input { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; background-color: #fff; }
         .input-group select { flex: 1; }
-        .input-group input { width: 110px; text-align: right; }
+        .input-group input { width: 100px; text-align: right; }
         button {
             width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none;
             border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
         }
         button:active { opacity: 0.9; }
         .btn-add-player { background-color: #007bff; padding: 8px 12px; width: auto; margin-top: 0; font-size: 14px; white-space: nowrap; }
+        .btn-action-small { background-color: #6c757d; padding: 6px 10px; width: auto; font-size: 13px; margin: 0; border-radius: 4px; }
+        .btn-remove-row { background-color: #dc3545; padding: 6px 10px; width: auto; font-size: 13px; margin: 0; border-radius: 4px; }
         .btn-clear-all { background-color: #d32f2f; margin-top: 15px; font-size: 14px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95em; }
         th, td { padding: 10px 5px; text-align: center; border-bottom: 1px solid #eee; }
@@ -54,6 +56,7 @@
         .btn-del { background: none; border: none; color: #999; font-size: 1.1em; cursor: pointer; padding: 5px 8px; width: auto; margin: 0; }
         .room-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; background: #e8f5e9; padding: 10px; border-radius: 8px; }
         .fan-section { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-top: 15px; border: 1px dashed #ccc; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     </style>
 
     <!-- Firebase SDK -->
@@ -86,12 +89,14 @@
     <!-- 每局輸贏輸入 -->
     <div class="card">
         <h2>🀄 輸入今局對局</h2>
-        <p style="font-size: 0.8em; color: #666; text-align: center; margin-bottom: 15px;">贏錢填正數，輸錢填負數<br>4 人總和必須等於 0</p>
+        <p style="font-size: 0.8em; color: #666; text-align: center; margin-bottom: 15px;">贏錢填正數，輸錢填負數<br>所有人總和必須等於 0</p>
         
-        <div class="input-group"><select id="select0"></select><input type="number" id="score0" placeholder="0"></div>
-        <div class="input-group"><select id="select1"></select><input type="number" id="score1" placeholder="0"></div>
-        <div class="input-group"><select id="select2"></select><input type="number" id="score2" placeholder="0"></div>
-        <div class="input-group"><select id="select3"></select><input type="number" id="score3" placeholder="0"></div>
+        <div id="round-rows-container"></div>
+
+        <div class="flex-between">
+            <button type="button" class="btn-action-small" onclick="addPlayerRow()">➕ 增加一人</button>
+            <span style="font-size: 0.8em; color: #888;">按需求自由調整人數</span>
+        </div>
 
         <!-- 今局最高食糊紀錄（選填） -->
         <div class="fan-section">
@@ -102,7 +107,7 @@
             </div>
         </div>
 
-        <div id="error-msg" class="error">4 人的總和不等於 0，請檢查數字！</div>
+        <div id="error-msg" class="error">所有人的總和不等於 0，請檢查數字！</div>
         <button onclick="addRound()">紀錄今局</button>
     </div>
 
@@ -148,7 +153,6 @@
 </div>
 
 <script>
-    // 已自動整合你的專屬 Firebase 設定
     const firebaseConfig = {
         apiKey: "AIzaSyDSJbmMGgT8QWWqwHLCSHZClpJL6t-8LQI",
         authDomain: "sjmj-trial-1.firebaseapp.com",
@@ -166,6 +170,7 @@
     let currentRoom = "room123";
     let players = [];
     let history = [];
+    let rowCount = 0;
 
     window.onload = function() {
         listenToRoom(currentRoom);
@@ -187,6 +192,7 @@
             } else {
                 players = []; history = [];
             }
+            initInputRows();
             updatePlayerSelects();
             renderAll();
         });
@@ -209,13 +215,54 @@
         pushDataToCloud();
     }
 
-    function updatePlayerSelects() {
-        const fanSelect = document.getElementById('fan-player');
-        const currentFanVal = fanSelect.value;
-        fanSelect.innerHTML = '<option value="">無 / 未有紀錄</option>';
+    function initInputRows() {
+        const container = document.getElementById('round-rows-container');
+        if (container.children.length === 0) {
+            container.innerHTML = '';
+            rowCount = 0;
+            // 預設先開 4 行
+            for (let i = 0; i < 4; i++) {
+                addPlayerRow();
+            }
+        }
+    }
 
-        for (let i = 0; i < 4; i++) {
-            const select = document.getElementById(`select${i}`);
+    function addPlayerRow() {
+        const container = document.getElementById('round-rows-container');
+        const rowId = `row-${rowCount}`;
+        
+        const div = document.createElement('div');
+        div.className = 'input-group';
+        div.id = rowId;
+        div.innerHTML = `
+            <select class="player-select"></select>
+            <input type="number" class="player-score" placeholder="0">
+            <button type="button" class="btn-remove-row" onclick="removeRow('${rowId}')">✕</button>
+        `;
+        
+        container.appendChild(div);
+        rowCount++;
+        updatePlayerSelects();
+    }
+
+    function removeRow(rowId) {
+        const container = document.getElementById('round-rows-container');
+        if (container.children.length <= 2) {
+            alert('對局最少需要 2 位玩家！');
+            return;
+        }
+        const elem = document.getElementById(rowId);
+        if (elem) elem.remove();
+    }
+
+    function updatePlayerSelects() {
+        const selects = document.querySelectorAll('.player-select');
+        const fanSelect = document.getElementById('fan-player');
+        
+        const currentFanVal = fanSelect ? fanSelect.value : '';
+        if (fanSelect) fanSelect.innerHTML = '<option value="">無 / 未有紀錄</option>';
+
+        selects.forEach((select, idx) => {
             const currentVal = select.value;
             select.innerHTML = '';
 
@@ -223,42 +270,65 @@
                 const opt = document.createElement('option');
                 opt.value = ""; opt.innerText = "請先新增玩家";
                 select.appendChild(opt);
-                continue;
-            }
+            } else {
+                players.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p; opt.innerText = p;
+                    select.appendChild(opt);
+                });
 
+                if (players.includes(currentVal)) {
+                    select.value = currentVal;
+                } else if (players[idx]) {
+                    select.value = players[idx];
+                } else {
+                    select.value = players[0];
+                }
+            }
+        });
+
+        if (fanSelect) {
             players.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p; opt.innerText = p;
-                select.appendChild(opt);
+                fanSelect.appendChild(opt);
             });
-
-            if (players.includes(currentVal)) select.value = currentVal;
-            else if (players[i]) select.value = players[i];
-            else select.value = players[0];
+            if (players.includes(currentFanVal)) fanSelect.value = currentFanVal;
         }
-
-        players.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p; opt.innerText = p;
-            fanSelect.appendChild(opt);
-        });
-
-        if (players.includes(currentFanVal)) fanSelect.value = currentFanVal;
     }
 
     function addRound() {
-        if (players.length < 4) { alert('請先新增至少 4 位玩家！'); return; }
+        const selects = document.querySelectorAll('.player-select');
+        const scoreInputs = document.querySelectorAll('.player-score');
         const errorMsg = document.getElementById('error-msg');
-        let selectedPlayers = [], inputs = [], sum = 0;
 
-        for (let i = 0; i < 4; i++) {
-            const pName = document.getElementById(`select${i}`).value;
-            const val = parseFloat(document.getElementById(`score${i}`).value) || 0;
-            selectedPlayers.push(pName); inputs.push(val); sum += val;
+        if (players.length < selects.length) { 
+            alert('請先在上方新增足夠的玩家！'); 
+            return; 
         }
 
-        if (new Set(selectedPlayers).size < 4) { alert('請勿選擇重複玩家！'); return; }
-        if (Math.abs(sum) > 0.01) { errorMsg.style.display = 'block'; return; }
+        let selectedPlayers = [];
+        let inputs = [];
+        let sum = 0;
+
+        for (let i = 0; i < selects.length; i++) {
+            const pName = selects[i].value;
+            const val = parseFloat(scoreInputs[i].value) || 0;
+            if (!pName) { alert('請選擇有效的玩家！'); return; }
+            selectedPlayers.push(pName);
+            inputs.push(val);
+            sum += val;
+        }
+
+        if (new Set(selectedPlayers).size < selectedPlayers.length) { 
+            alert('同一局內請勿選擇重複的玩家！'); 
+            return; 
+        }
+
+        if (Math.abs(sum) > 0.01) { 
+            errorMsg.style.display = 'block'; 
+            return; 
+        }
         errorMsg.style.display = 'none';
 
         const fanPlayer = document.getElementById('fan-player').value;
@@ -275,7 +345,7 @@
             fanCount: fanCount
         });
 
-        for (let i = 0; i < 4; i++) { document.getElementById(`score${i}`).value = ''; }
+        scoreInputs.forEach(input => input.value = '');
         document.getElementById('fan-count').value = '';
         pushDataToCloud();
     }
