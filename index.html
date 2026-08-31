@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>打麻雀計錢表 & 龍虎榜</title>
+    <title>即時同步麻雀計錢表 & 龍虎榜</title>
     <style>
         :root {
             --bg-color: #f4f6f9;
             --card-bg: #ffffff;
             --primary: #2e7d32;
             --text: #333333;
-            --win: #2e7d32;   /* 正數/贏錢：綠色 */
-            --loss: #d32f2f;  /* 負數/輸錢：紅色 */
+            --win: #2e7d32;
+            --loss: #d32f2f;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--text);
             margin: 0;
@@ -23,10 +23,7 @@
             flex-direction: column;
             align-items: center;
         }
-        .container {
-            width: 100%;
-            max-width: 500px;
-        }
+        .container { width: 100%; max-width: 500px; }
         .card {
             background: var(--card-bg);
             padding: 20px;
@@ -34,111 +31,46 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
             margin-bottom: 20px;
         }
-        h2 {
-            margin-top: 0;
-            color: var(--primary);
-            text-align: center;
-            font-size: 1.2em;
-        }
-        .input-group {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            gap: 10px;
-        }
-        .input-group select {
-            flex: 1;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 16px;
-            background-color: #fff;
-        }
-        .input-group input {
-            width: 110px;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            text-align: right;
-            font-size: 16px;
-        }
+        h2 { margin-top: 0; color: var(--primary); text-align: center; font-size: 1.2em; }
+        .input-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; }
+        .input-group select, .input-group input { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; background-color: #fff; }
+        .input-group select { flex: 1; }
+        .input-group input { width: 110px; text-align: right; }
         button {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
+            width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none;
+            border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
         }
         button:active { opacity: 0.9; }
-        .btn-add-player {
-            background-color: #007bff;
-            padding: 8px 12px;
-            width: auto;
-            margin-top: 0;
-            font-size: 14px;
-            white-space: nowrap;
-        }
-        .btn-share {
-            background-color: #17a2b8;
-            margin-top: 10px;
-        }
-        .btn-clear-all {
-            background-color: #d32f2f;
-            margin-top: 15px;
-            font-size: 14px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 0.95em;
-        }
-        th, td {
-            padding: 10px 5px;
-            text-align: center;
-            border-bottom: 1px solid #eee;
-        }
+        .btn-add-player { background-color: #007bff; padding: 8px 12px; width: auto; margin-top: 0; font-size: 14px; white-space: nowrap; }
+        .btn-clear-all { background-color: #d32f2f; margin-top: 15px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95em; }
+        th, td { padding: 10px 5px; text-align: center; border-bottom: 1px solid #eee; }
         th { background-color: #f8f9fa; }
         .win-score { color: var(--win); font-weight: bold; }
         .loss-score { color: var(--loss); font-weight: bold; }
         .error { color: var(--loss); text-align: center; font-size: 0.9em; display: none; margin-top: 5px; }
-        
-        .history-item {
-            border-bottom: 1px solid #eee;
-            padding: 10px 0;
-            font-size: 0.85em;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .history-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4px 10px;
-            flex-grow: 1;
-        }
-        .btn-del {
-            background: none;
-            border: none;
-            color: #999;
-            font-size: 1.1em;
-            cursor: pointer;
-            padding: 5px 8px;
-            width: auto;
-            margin: 0;
-        }
+        .history-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 0.85em; display: flex; justify-content: space-between; align-items: center; }
+        .history-details { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; flex-grow: 1; }
+        .btn-del { background: none; border: none; color: #999; font-size: 1.1em; cursor: pointer; padding: 5px 8px; width: auto; margin: 0; }
+        .room-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; background: #e8f5e9; padding: 10px; border-radius: 8px; }
+        .fan-section { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-top: 15px; border: 1px dashed #ccc; }
     </style>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
 <body>
 
 <div class="container">
-    <!-- 新增玩家 -->
+    <div class="card">
+        <h2>🏠 雲端對局房間</h2>
+        <div class="room-bar">
+            <span style="white-space: nowrap; font-weight: bold;">房間號碼：</span>
+            <input type="text" id="room-id" value="room123" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:16px;">
+            <button class="btn-add-player" onclick="switchRoom()">進入房間</button>
+        </div>
+    </div>
+
     <div class="card">
         <h2>👥 新增雀友</h2>
         <div style="display: flex; gap: 8px;">
@@ -147,89 +79,112 @@
         </div>
     </div>
 
-    <!-- 每局輸贏輸入 -->
     <div class="card">
         <h2>🀄 輸入今局對局</h2>
-        <p style="font-size: 0.8em; color: #666; text-align: center; margin-bottom: 15px;">贏錢填正數（如 50），輸錢填負數（如 -50）<br>4 人總和必須等於 0</p>
+        <p style="font-size: 0.8em; color: #666; text-align: center; margin-bottom: 15px;">贏錢填正數，輸錢填負數<br>4 人總和必須等於 0</p>
         
-        <div class="input-group">
-            <select id="select0"></select>
-            <input type="number" id="score0" placeholder="0">
-        </div>
-        <div class="input-group">
-            <select id="select1"></select>
-            <input type="number" id="score1" placeholder="0">
-        </div>
-        <div class="input-group">
-            <select id="select2"></select>
-            <input type="number" id="score2" placeholder="0">
-        </div>
-        <div class="input-group">
-            <select id="select3"></select>
-            <input type="number" id="score3" placeholder="0">
+        <div class="input-group"><select id="select0"></select><input type="number" id="score0" placeholder="0"></div>
+        <div class="input-group"><select id="select1"></select><input type="number" id="score1" placeholder="0"></div>
+        <div class="input-group"><select id="select2"></select><input type="number" id="score2" placeholder="0"></div>
+        <div class="input-group"><select id="select3"></select><input type="number" id="score3" placeholder="0"></div>
+
+        <div class="fan-section">
+            <div style="font-weight: bold; font-size: 0.9em; margin-bottom: 8px; color: #444;">🀄 今局最高食糊（選填）：</div>
+            <div style="display: flex; gap: 8px;">
+                <select id="fan-player" style="flex:1; padding:6px; border-radius:6px; font-size:14px;"></select>
+                <input type="number" id="fan-count" placeholder="番數/分數" style="width:100px; padding:6px; border:1px solid #ccc; border-radius:6px; font-size:14px;">
+            </div>
         </div>
 
         <div id="error-msg" class="error">4 人的總和不等於 0，請檢查數字！</div>
         <button onclick="addRound()">紀錄今局</button>
     </div>
 
-    <!-- 總累積龍虎榜 -->
     <div class="card">
-        <h2>🏆 總累積龍虎榜</h2>
+        <h2>🏆 總累積輸贏龍虎榜</h2>
         <table>
             <thead>
-                <tr>
-                    <th>排名</th>
-                    <th>玩家</th>
-                    <th>總成績</th>
-                </tr>
+                <tr><th>排名</th><th>玩家</th><th>總成績</th></tr>
             </thead>
-            <tbody id="leaderboard">
-                <!-- 動態生成 -->
-            </tbody>
+            <tbody id="leaderboard"></tbody>
         </table>
     </div>
 
-    <!-- 每局歷史紀錄與同步 -->
+    <div class="card">
+        <h2>📊 雀友最多出席榜</h2>
+        <table>
+            <thead>
+                <tr><th>排名</th><th>玩家</th><th>總出席局數</th></tr>
+            </thead>
+            <tbody id="attendance-board"></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>💥 最高食糊番數榜</h2>
+        <table>
+            <thead>
+                <tr><th>排名</th><th>玩家</th><th>最高番數/分數</th></tr>
+            </thead>
+            <tbody id="maxfan-board"></tbody>
+        </table>
+    </div>
+
     <div class="card">
         <h2>📜 所有對局歷史紀錄</h2>
         <div id="history-list"></div>
-        
-        <button class="btn-share" onclick="exportData()">📤 複製數據傳給雀友同步</button>
-        <button class="btn-share" style="background-color:#6c757d;" onclick="importData()">📥 匯入雀友發送的數據</button>
         <button class="btn-clear-all" onclick="clearAllData()">⚠️ 清除所有數據與玩家</button>
     </div>
 </div>
 
 <script>
-    let players = [];
-    let history = []; 
-
-    const Storage = {
-        get: function(key) {
-            try { return localStorage.getItem(key); } catch (e) { return window['temp_' + key] || null; }
-        },
-        set: function(key, value) {
-            try { localStorage.setItem(key, value); } catch (e) { window['temp_' + key] = value; }
-        }
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
     };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let currentRoom = "room123";
+    let players = [];
+    let history = [];
 
     window.onload = function() {
-        loadData();
-        updatePlayerSelects();
-        renderAll();
+        listenToRoom(currentRoom);
     };
 
-    function saveData() {
-        Storage.set('mj_v5_players', JSON.stringify(players));
-        Storage.set('mj_v5_history', JSON.stringify(history));
+    function switchRoom() {
+        const roomInput = document.getElementById('room-id').value.trim();
+        if (!roomInput) return;
+        currentRoom = roomInput;
+        listenToRoom(currentRoom);
     }
 
-    function loadData() {
-        const savedPlayers = Storage.get('mj_v5_players');
-        const savedHistory = Storage.get('mj_v5_history');
-        if (savedPlayers) { try { players = JSON.parse(savedPlayers); } catch(e) { players = []; } }
-        if (savedHistory) { try { history = JSON.parse(savedHistory); } catch(e) { history = []; } }
+    function listenToRoom(roomId) {
+        db.ref('rooms/' + roomId).on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                players = data.players || [];
+                history = data.history || [];
+            } else {
+                players = []; history = [];
+            }
+            updatePlayerSelects();
+            renderAll();
+        });
+    }
+
+    function pushDataToCloud() {
+        db.ref('rooms/' + currentRoom).set({
+            players: players,
+            history: history
+        });
     }
 
     function addNewPlayer() {
@@ -239,37 +194,47 @@
         if (players.includes(name)) { alert('玩家名字已存在！'); return; }
         players.push(name);
         input.value = '';
-        saveData();
-        updatePlayerSelects();
-        renderAll();
+        pushDataToCloud();
     }
 
     function updatePlayerSelects() {
+        const fanSelect = document.getElementById('fan-player');
+        fanSelect.innerHTML = '<option value="">無 / 未有紀錄</option>';
+
         for (let i = 0; i < 4; i++) {
             const select = document.getElementById(`select${i}`);
             const currentVal = select.value;
             select.innerHTML = '';
+
             if (players.length === 0) {
                 const opt = document.createElement('option');
                 opt.value = ""; opt.innerText = "請先新增玩家";
                 select.appendChild(opt);
                 continue;
             }
+
             players.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p; opt.innerText = p;
                 select.appendChild(opt);
             });
-            if (players.includes(currentVal)) { select.value = currentVal; }
-            else if (players[i]) { select.value = players[i]; }
-            else { select.value = players[0]; }
+
+            if (players.includes(currentVal)) select.value = currentVal;
+            else if (players[i]) select.value = players[i];
+            else select.value = players[0];
         }
+
+        players.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p; opt.innerText = p;
+            fanSelect.appendChild(opt);
+        });
     }
 
     function addRound() {
         if (players.length < 4) { alert('請先新增至少 4 位玩家！'); return; }
         const errorMsg = document.getElementById('error-msg');
-        let selectedPlayers = []; let inputs = []; let sum = 0;
+        let selectedPlayers = [], inputs = [], sum = 0;
 
         for (let i = 0; i < 4; i++) {
             const pName = document.getElementById(`select${i}`).value;
@@ -281,65 +246,92 @@
         if (Math.abs(sum) > 0.01) { errorMsg.style.display = 'block'; return; }
         errorMsg.style.display = 'none';
 
+        // 讀取最高番數資料
+        const fanPlayer = document.getElementById('fan-player').value;
+        const fanCount = parseFloat(document.getElementById('fan-count').value) || 0;
+
         const now = new Date();
         const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        history.unshift({ players: selectedPlayers, scores: inputs, time: timeStr });
+        
+        history.unshift({
+            players: selectedPlayers,
+            scores: inputs,
+            time: timeStr,
+            fanPlayer: fanPlayer,
+            fanCount: fanCount
+        });
 
         for (let i = 0; i < 4; i++) { document.getElementById(`score${i}`).value = ''; }
-        saveData();
-        renderAll();
+        document.getElementById('fan-count').value = '';
+        pushDataToCloud();
     }
 
     function deleteRound(index) {
         if (confirm(`確定要刪除第 ${history.length - index} 局紀錄？`)) {
             history.splice(index, 1);
-            saveData();
-            renderAll();
+            pushDataToCloud();
         }
     }
 
     function renderAll() {
+        const medals = ['🥇', '🥈', '🥉'];
+
+        // 1. 總輸贏龍虎榜
         let totals = {};
-        players.forEach(p => totals[p] = 0);
+        let attendance = {};
+        let maxFans = {};
+
+        players.forEach(p => {
+            totals[p] = 0;
+            attendance[p] = 0;
+            maxFans[p] = 0;
+        });
+
         history.forEach(round => {
             round.players.forEach((pName, i) => {
                 if (!(pName in totals)) totals[pName] = 0;
+                if (!(pName in attendance)) attendance[pName] = 0;
                 totals[pName] += round.scores[i];
+                attendance[pName] += 1; // 累加出席次數
             });
+
+            // 統計最高番數
+            if (round.fanPlayer && round.fanCount > 0) {
+                if (!(round.fanPlayer in maxFans) || round.fanCount > maxFans[round.fanPlayer]) {
+                    maxFans[round.fanPlayer] = round.fanCount;
+                }
+            }
         });
 
-        let leaderboardData = Object.keys(totals).map(name => ({
-            name: name, total: totals[name]
-        })).sort((a, b) => b.total - a.total);
-
+        // 渲染輸贏榜
+        let leaderboardData = Object.keys(totals).map(name => ({ name: name, total: totals[name] })).sort((a, b) => b.total - a.total);
         const leaderboardTbody = document.getElementById('leaderboard');
-        leaderboardTbody.innerHTML = '';
+        leaderboardTbody.innerHTML = leaderboardData.length === 0 ? '<tr><td colspan="3" style="color:#999;">暫無數據</td></tr>' : '';
+        leaderboardData.forEach((p, i) => {
+            const scoreClass = p.total > 0 ? 'win-score' : (p.total < 0 ? 'loss-score' : '');
+            const displayScore = p.total > 0 ? `+${p.total}` : p.total;
+            leaderboardTbody.innerHTML += `<tr><td>${medals[i] || (i + 1)}</td><td>${p.name}</td><td class="${scoreClass}">${displayScore}</td></tr>`;
+        });
 
-        if (leaderboardData.length === 0) {
-            leaderboardTbody.innerHTML = '<tr><td colspan="3" style="color:#999;">暫無玩家數據</td></tr>';
-        } else {
-            const medals = ['🥇', '🥈', '🥉'];
-            leaderboardData.forEach((player, index) => {
-                const row = document.createElement('tr');
-                // 正數用 win-score (綠色)，負數用 loss-score (紅色)
-                const scoreClass = player.total > 0 ? 'win-score' : (player.total < 0 ? 'loss-score' : '');
-                const displayScore = player.total > 0 ? `+${player.total}` : player.total;
-                row.innerHTML = `
-                    <td>${medals[index] || (index + 1)}</td>
-                    <td>${player.name}</td>
-                    <td class="${scoreClass}">${displayScore}</td>
-                `;
-                leaderboardTbody.appendChild(row);
-            });
-        }
+        // 2. 渲染出席率榜 (功能 1)
+        let attendanceData = Object.keys(attendance).map(name => ({ name: name, count: attendance[name] })).sort((a, b) => b.count - a.count);
+        const attendanceTbody = document.getElementById('attendance-board');
+        attendanceTbody.innerHTML = attendanceData.length === 0 ? '<tr><td colspan="3" style="color:#999;">暫無數據</td></tr>' : '';
+        attendanceData.forEach((p, i) => {
+            attendanceTbody.innerHTML += `<tr><td>${medals[i] || (i + 1)}</td><td>${p.name}</td><td><b>${p.count}</b> 局</td></tr>`;
+        });
 
+        // 3. 渲染最高番數榜 (功能 2)
+        let maxFanData = Object.keys(maxFans).filter(name => maxFans[name] > 0).map(name => ({ name: name, fan: maxFans[name] })).sort((a, b) => b.fan - a.fan);
+        const maxfanTbody = document.getElementById('maxfan-board');
+        maxfanTbody.innerHTML = maxFanData.length === 0 ? '<tr><td colspan="3" style="color:#999;">暫無食糊紀錄</td></tr>' : '';
+        maxFanData.forEach((p, i) => {
+            maxfanTbody.innerHTML += `<tr><td>${medals[i] || (i + 1)}</td><td>${p.name}</td><td style="color:var(--primary); font-weight:bold;">${p.fan} 番/分</td></tr>`;
+        });
+
+        // 4. 歷史紀錄列表
         const historyContainer = document.getElementById('history-list');
-        historyContainer.innerHTML = '';
-        if (history.length === 0) {
-            historyContainer.innerHTML = '<p style="text-align:center; color:#999; font-size:0.9em;">暫無對局紀錄</p>';
-            return;
-        }
-
+        historyContainer.innerHTML = history.length === 0 ? '<p style="text-align:center; color:#999; font-size:0.9em;">暫無對局紀錄</p>' : '';
         history.forEach((round, index) => {
             const item = document.createElement('div');
             item.className = 'history-item';
@@ -350,45 +342,22 @@
                 const sign = score > 0 ? '+' : '';
                 detailsHtml += `<div>${pName}: <span style="color:${color}; font-weight:bold;">${sign}${score}</span></div>`;
             });
+            
+            let fanInfo = round.fanPlayer && round.fanCount > 0 ? `<div style="grid-column: span 2; color:#007bff; font-weight:bold;">🀄 ${round.fanPlayer} 食 ${round.fanCount} 番</div>` : '';
+
             item.innerHTML = `
                 <div style="font-weight:bold; width:65px; color:#666;">第 ${history.length - index} 局<br><span style="font-size:0.8em; font-weight:normal;">${round.time}</span></div>
-                <div class="history-details">${detailsHtml}</div>
+                <div class="history-details">${detailsHtml}${fanInfo}</div>
                 <button class="btn-del" onclick="deleteRound(${index})">❌</button>
             `;
             historyContainer.appendChild(item);
         });
     }
 
-    // 數據同步功能
-    function exportData() {
-        const dataStr = JSON.stringify({ players: players, history: history });
-        navigator.clipboard.writeText(dataStr).then(() => {
-            alert('對局數據已複製到剪貼簿！你可以直接 Paste / 貼上傳給朋友。');
-        }).catch(() => {
-            prompt('請複製以下數據發送給雀友：', dataStr);
-        });
-    }
-
-    function importData() {
-        const inputData = prompt('請貼上雀友傳給你的數據代碼：');
-        if (!inputData) return;
-        try {
-            const parsed = JSON.parse(inputData);
-            if (parsed.players && parsed.history) {
-                players = parsed.players;
-                history = parsed.history;
-                saveData();
-                updatePlayerSelects();
-                renderAll();
-                alert('數據匯入成功！龍虎榜已更新。');
-            } else { alert('數據格式無效！'); }
-        } catch (e) { alert('匯入失敗，代碼有誤！'); }
-    }
-
     function clearAllData() {
-        if (confirm('⚠️ 確定要清除所有歷史紀錄與玩家名單？')) {
+        if (confirm('⚠️ 確定要清除房間內所有歷史紀錄與玩家名單？')) {
             players = []; history = [];
-            saveData(); updatePlayerSelects(); renderAll();
+            pushDataToCloud();
         }
     }
 </script>
