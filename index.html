@@ -68,7 +68,7 @@
         <h2>🏠 雲端對局房間 v2.0</h2>
         <div class="room-bar">
             <span style="white-space: nowrap; font-weight: bold;">房間號碼：</span>
-            <input type="text" id="room-id" value="room123" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:16px;">
+            <input type="text" id="room-id" value="1" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:16px;">
             <button class="btn-add-player" onclick="switchRoom()">進入房間</button>
         </div>
         <p style="font-size: 0.8em; color: #666; margin: 0; text-align: center;">只要所有人輸入「同一個房間號碼」，所有手機均可即時同步數據！</p>
@@ -166,7 +166,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let currentRoom = "room123";
+    let currentRoom = "1";
     let players = [];
     let history = [];
 
