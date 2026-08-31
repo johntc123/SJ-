@@ -56,12 +56,14 @@
         .fan-section { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-top: 15px; border: 1px dashed #ccc; }
     </style>
 
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
 <body>
 
 <div class="container">
+    <!-- 雲端房間 -->
     <div class="card">
         <h2>🏠 雲端對局房間</h2>
         <div class="room-bar">
@@ -69,8 +71,10 @@
             <input type="text" id="room-id" value="room123" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:16px;">
             <button class="btn-add-player" onclick="switchRoom()">進入房間</button>
         </div>
+        <p style="font-size: 0.8em; color: #666; margin: 0; text-align: center;">只要所有人輸入「同一個房間號碼」，所有手機均可即時同步數據！</p>
     </div>
 
+    <!-- 新增玩家 -->
     <div class="card">
         <h2>👥 新增雀友</h2>
         <div style="display: flex; gap: 8px;">
@@ -79,6 +83,7 @@
         </div>
     </div>
 
+    <!-- 每局輸贏輸入 -->
     <div class="card">
         <h2>🀄 輸入今局對局</h2>
         <p style="font-size: 0.8em; color: #666; text-align: center; margin-bottom: 15px;">贏錢填正數，輸錢填負數<br>4 人總和必須等於 0</p>
@@ -88,6 +93,7 @@
         <div class="input-group"><select id="select2"></select><input type="number" id="score2" placeholder="0"></div>
         <div class="input-group"><select id="select3"></select><input type="number" id="score3" placeholder="0"></div>
 
+        <!-- 今局最高食糊紀錄（選填） -->
         <div class="fan-section">
             <div style="font-weight: bold; font-size: 0.9em; margin-bottom: 8px; color: #444;">🀄 今局最高食糊（選填）：</div>
             <div style="display: flex; gap: 8px;">
@@ -100,6 +106,7 @@
         <button onclick="addRound()">紀錄今局</button>
     </div>
 
+    <!-- 總累積龍虎榜 -->
     <div class="card">
         <h2>🏆 總累積輸贏龍虎榜</h2>
         <table>
@@ -110,6 +117,7 @@
         </table>
     </div>
 
+    <!-- 雀友最多出席榜 -->
     <div class="card">
         <h2>📊 雀友最多出席榜</h2>
         <table>
@@ -120,6 +128,7 @@
         </table>
     </div>
 
+    <!-- 最高食糊番數龍虎榜 -->
     <div class="card">
         <h2>💥 最高食糊番數榜</h2>
         <table>
@@ -130,22 +139,25 @@
         </table>
     </div>
 
+    <!-- 每局歷史紀錄 -->
     <div class="card">
         <h2>📜 所有對局歷史紀錄</h2>
         <div id="history-list"></div>
-        <button class="btn-clear-all" onclick="clearAllData()">⚠️ 清除所有數據與玩家</button>
+        <button class="btn-clear-all" onclick="clearAllData()">⚠️ 清除房間內所有數據與玩家</button>
     </div>
 </div>
 
 <script>
+    // 已自動整合你的專屬 Firebase 設定
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-        databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT_ID.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "AIzaSyDSJbmMGgT8QWWqwHLCSHZClpJL6t-8LQI",
+        authDomain: "sjmj-trial-1.firebaseapp.com",
+        databaseURL: "https://sjmj-trial-1-default-rtdb.firebaseio.com",
+        projectId: "sjmj-trial-1",
+        storageBucket: "sjmj-trial-1.firebasestorage.app",
+        messagingSenderId: "640071510364",
+        appId: "1:640071510364:web:138cce3aef5296f606b999",
+        measurementId: "G-RHPREYK24V"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -199,6 +211,7 @@
 
     function updatePlayerSelects() {
         const fanSelect = document.getElementById('fan-player');
+        const currentFanVal = fanSelect.value;
         fanSelect.innerHTML = '<option value="">無 / 未有紀錄</option>';
 
         for (let i = 0; i < 4; i++) {
@@ -229,6 +242,8 @@
             opt.value = p; opt.innerText = p;
             fanSelect.appendChild(opt);
         });
+
+        if (players.includes(currentFanVal)) fanSelect.value = currentFanVal;
     }
 
     function addRound() {
@@ -246,7 +261,6 @@
         if (Math.abs(sum) > 0.01) { errorMsg.style.display = 'block'; return; }
         errorMsg.style.display = 'none';
 
-        // 讀取最高番數資料
         const fanPlayer = document.getElementById('fan-player').value;
         const fanCount = parseFloat(document.getElementById('fan-count').value) || 0;
 
@@ -276,7 +290,6 @@
     function renderAll() {
         const medals = ['🥇', '🥈', '🥉'];
 
-        // 1. 總輸贏龍虎榜
         let totals = {};
         let attendance = {};
         let maxFans = {};
@@ -292,10 +305,9 @@
                 if (!(pName in totals)) totals[pName] = 0;
                 if (!(pName in attendance)) attendance[pName] = 0;
                 totals[pName] += round.scores[i];
-                attendance[pName] += 1; // 累加出席次數
+                attendance[pName] += 1;
             });
 
-            // 統計最高番數
             if (round.fanPlayer && round.fanCount > 0) {
                 if (!(round.fanPlayer in maxFans) || round.fanCount > maxFans[round.fanPlayer]) {
                     maxFans[round.fanPlayer] = round.fanCount;
@@ -303,7 +315,7 @@
             }
         });
 
-        // 渲染輸贏榜
+        // 1. 總輸贏龍虎榜
         let leaderboardData = Object.keys(totals).map(name => ({ name: name, total: totals[name] })).sort((a, b) => b.total - a.total);
         const leaderboardTbody = document.getElementById('leaderboard');
         leaderboardTbody.innerHTML = leaderboardData.length === 0 ? '<tr><td colspan="3" style="color:#999;">暫無數據</td></tr>' : '';
@@ -313,7 +325,7 @@
             leaderboardTbody.innerHTML += `<tr><td>${medals[i] || (i + 1)}</td><td>${p.name}</td><td class="${scoreClass}">${displayScore}</td></tr>`;
         });
 
-        // 2. 渲染出席率榜 (功能 1)
+        // 2. 出席率榜
         let attendanceData = Object.keys(attendance).map(name => ({ name: name, count: attendance[name] })).sort((a, b) => b.count - a.count);
         const attendanceTbody = document.getElementById('attendance-board');
         attendanceTbody.innerHTML = attendanceData.length === 0 ? '<tr><td colspan="3" style="color:#999;">暫無數據</td></tr>' : '';
@@ -321,7 +333,7 @@
             attendanceTbody.innerHTML += `<tr><td>${medals[i] || (i + 1)}</td><td>${p.name}</td><td><b>${p.count}</b> 局</td></tr>`;
         });
 
-        // 3. 渲染最高番數榜 (功能 2)
+        // 3. 最高番數榜
         let maxFanData = Object.keys(maxFans).filter(name => maxFans[name] > 0).map(name => ({ name: name, fan: maxFans[name] })).sort((a, b) => b.fan - a.fan);
         const maxfanTbody = document.getElementById('maxfan-board');
         maxfanTbody.innerHTML = maxFanData.length === 0 ? '<tr><td colspan="3" style="color:#999;">暫無食糊紀錄</td></tr>' : '';
@@ -329,7 +341,7 @@
             maxfanTbody.innerHTML += `<tr><td>${medals[i] || (i + 1)}</td><td>${p.name}</td><td style="color:var(--primary); font-weight:bold;">${p.fan} 番/分</td></tr>`;
         });
 
-        // 4. 歷史紀錄列表
+        // 4. 歷史紀錄
         const historyContainer = document.getElementById('history-list');
         historyContainer.innerHTML = history.length === 0 ? '<p style="text-align:center; color:#999; font-size:0.9em;">暫無對局紀錄</p>' : '';
         history.forEach((round, index) => {
