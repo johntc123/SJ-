@@ -169,7 +169,6 @@
     let rowIdCounter = 0;
 
     window.onload = function() {
-        // 預設建立 4 個輸入列
         for(let i=0; i<4; i++) {
             addPlayerRow();
         }
@@ -365,8 +364,13 @@
             }
         });
 
-        // 1. 總輸贏龍虎榜
-        let leaderboardData = Object.keys(totals).map(name => ({ name: name, total: totals[name] })).sort((a, b) => b.total - a.total);
+        // 1. 總輸贏龍虎榜（自訂排序：正數 > 負數 > 0）
+        let leaderboardData = Object.keys(totals).map(name => ({ name: name, total: totals[name] })).sort((a, b) => {
+            if (a.total === 0 && b.total !== 0) return 1;
+            if (b.total === 0 && a.total !== 0) return -1;
+            return b.total - a.total;
+        });
+
         const leaderboardTbody = document.getElementById('leaderboard');
         leaderboardTbody.innerHTML = leaderboardData.length === 0 ? '<tr><td colspan="3" style="color:#999;">暫無數據</td></tr>' : '';
         leaderboardData.forEach((p, i) => {
