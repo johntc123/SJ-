@@ -69,7 +69,7 @@
 <div class="container">
     <!-- 雲端房間 -->
     <div class="card">
-        <h2>🏠 雲端對局房間 v3.1</h2>
+        <h2>🏠 雲端對局房間 v3.2</h2>
         <div class="room-bar">
             <span style="white-space: nowrap; font-weight: bold;">房間號碼：</span>
             <input type="text" id="room-id" value="1" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:16px;">
@@ -135,12 +135,12 @@
         </table>
     </div>
 
-    <!-- 最高食糊番數龍虎榜 -->
+    <!-- 食糊番數排行榜 -->
     <div class="card">
-        <h2>💥 最高食糊番數榜</h2>
+        <h2>💥 食糊番數排行榜</h2>
         <table>
             <thead>
-                <tr><th style="width:15%;">排名</th><th style="width:25%;">玩家</th><th style="width:35%;">最高番數/分數</th><th style="width:25%;">日期</th></tr>
+                <tr><th style="width:15%;">排名</th><th style="width:25%;">玩家</th><th style="width:35%;">番數/分數</th><th style="width:25%;">日期</th></tr>
             </thead>
             <tbody id="maxfan-board"></tbody>
         </table>
@@ -182,7 +182,7 @@
         for(let i=0; i<4; i++) {
             addPlayerRow();
         }
-        addFanRow(); // 預設提供一個食糊輸入欄位
+        addFanRow();
         listenToRoom(currentRoom);
     };
 
@@ -322,11 +322,14 @@
             const pName = selects[i].value;
             const valStr = scoreInputs[i].value.trim();
 
+            // 只要選擇了玩家且有填寫數值（包括 0），均計入對局紀錄
             if (pName !== "" && valStr !== "") {
-                const val = parseFloat(valStr) || 0;
-                selectedPlayers.push(pName);
-                inputs.push(val);
-                sum += val;
+                const val = parseFloat(valStr);
+                if (!isNaN(val)) {
+                    selectedPlayers.push(pName);
+                    inputs.push(val);
+                    sum += val;
+                }
             }
         }
 
@@ -366,7 +369,7 @@
             players: selectedPlayers,
             scores: inputs,
             date: displayDate,
-            fanRecords: fanRecords // 存入陣列
+            fanRecords: fanRecords
         });
 
         scoreInputs.forEach(input => input.value = '');
@@ -391,7 +394,7 @@
 
         let totals = {};
         let attendance = {};
-        let maxFans = {}; // { player: { fan: number, date: string } }
+        let allFanRecords = [];
 
         players.forEach(p => {
             totals[p] = 0;
@@ -406,25 +409,24 @@
                 attendance[pName] += 1;
             });
 
-            // 相容新舊資料的食糊紀錄
-            let records = round.fanRecords || [];
+            // 收集每局的所有食糊紀錄
+            let records = round.fanRecords ? [...round.fanRecords] : [];
             if (round.fanPlayer && round.fanCount > 0) {
                 records.push({ player: round.fanPlayer, fan: round.fanCount });
             }
 
             records.forEach(rec => {
                 if (rec.player && rec.fan > 0) {
-                    if (!(rec.player in maxFans) || rec.fan > maxFans[rec.player].fan) {
-                        maxFans[rec.player] = {
-                            fan: rec.fan,
-                            date: round.date || '-'
-                        };
-                    }
+                    allFanRecords.push({
+                        player: rec.player,
+                        fan: rec.fan,
+                        date: round.date || '-'
+                    });
                 }
             });
         });
 
-        // 1. 總輸贏龍虎榜
+        // 1. 總輸贏龍虎榜（正數 > 負數 > 0）
         let leaderboardData = Object.keys(totals).map(name => ({ name: name, total: totals[name] })).sort((a, b) => {
             if (a.total === 0 && b.total !== 0) return 1;
             if (b.total === 0 && a.total !== 0) return -1;
@@ -447,26 +449,22 @@
             attendanceTbody.innerHTML += `<tr><td>${medals[i] || (i + 1)}</td><td>${p.name}</td><td><b>${p.count}</b> 局</td></tr>`;
         });
 
-        // 3. 最高番數榜
-        let maxFanData = Object.keys(maxFans).map(name => ({
-            name: name,
-            fan: maxFans[name].fan,
-            date: maxFans[name].date
-        })).sort((a, b) => b.fan - a.fan);
+        // 3. 食糊番數排行榜（列出所有輸入過的食糊紀錄，由大至小排序）
+        allFanRecords.sort((a, b) => b.fan - a.fan);
 
         const maxfanTbody = document.getElementById('maxfan-board');
-        maxfanTbody.innerHTML = maxFanData.length === 0 ? '<tr><td colspan="4" style="color:#999;">暫無食糊紀錄</td></tr>' : '';
-        maxFanData.forEach((p, i) => {
+        maxfanTbody.innerHTML = allFanRecords.length === 0 ? '<tr><td colspan="4" style="color:#999;">暫無食糊紀錄</td></tr>' : '';
+        allFanRecords.forEach((p, i) => {
             maxfanTbody.innerHTML += `
                 <tr>
                     <td>${medals[i] || (i + 1)}</td>
-                    <td>${p.name}</td>
+                    <td>${p.player}</td>
                     <td style="color:var(--primary); font-weight:bold;">${p.fan} 番/分</td>
                     <td style="color:#777; font-size:0.85em;">${p.date}</td>
                 </tr>`;
         });
 
-        // 4. 歷史紀錄
+        // 4. 歷史紀錄（確保 0 分也會被顯示）
         const historyContainer = document.getElementById('history-list');
         historyContainer.innerHTML = history.length === 0 ? '<p style="text-align:center; color:#999; font-size:0.9em;">暫無對局紀錄</p>' : '';
         history.forEach((round, index) => {
@@ -477,11 +475,12 @@
                 const score = round.scores[pIdx];
                 const color = score > 0 ? 'var(--win)' : (score < 0 ? 'var(--loss)' : '#666');
                 const sign = score > 0 ? '+' : '';
-                detailsHtml += `<div>${pName}: <span style="color:${color}; font-weight:bold;">${sign}${score}</span></div>`;
+                const displayValue = score === 0 ? '0' : `${sign}${score}`;
+                detailsHtml += `<div>${pName}: <span style="color:${color}; font-weight:bold;">${displayValue}</span></div>`;
             });
             
             // 展示多個食糊紀錄
-            let records = round.fanRecords || [];
+            let records = round.fanRecords ? [...round.fanRecords] : [];
             if (round.fanPlayer && round.fanCount > 0) {
                 records.push({ player: round.fanPlayer, fan: round.fanCount });
             }
