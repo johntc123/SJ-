@@ -69,7 +69,7 @@
 <div class="container">
     <!-- 雲端房間 -->
     <div class="card">
-        <h2>🏠 雲端對局房間 v3.2</h2>
+        <h2>🏠 雲端對局房間 v3.3</h2>
         <div class="room-bar">
             <span style="white-space: nowrap; font-weight: bold;">房間號碼：</span>
             <input type="text" id="room-id" value="1" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:16px;">
@@ -322,19 +322,17 @@
             const pName = selects[i].value;
             const valStr = scoreInputs[i].value.trim();
 
-            // 只要選擇了玩家且有填寫數值（包括 0），均計入對局紀錄
-            if (pName !== "" && valStr !== "") {
-                const val = parseFloat(valStr);
-                if (!isNaN(val)) {
-                    selectedPlayers.push(pName);
-                    inputs.push(val);
-                    sum += val;
-                }
+            // 只要有選擇玩家名字（即使分數留空預設為 0 或手動填 0），均算作該局參與玩家並顯示 : 0
+            if (pName !== "") {
+                const val = valStr === "" ? 0 : (parseFloat(valStr) || 0);
+                selectedPlayers.push(pName);
+                inputs.push(val);
+                sum += val;
             }
         }
 
         if (selectedPlayers.length < 2) {
-            alert('請至少選擇 2 位參與此局的玩家並填寫分數！');
+            alert('請至少選擇 2 位參與此局的玩家！');
             return;
         }
 
